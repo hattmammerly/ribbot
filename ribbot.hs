@@ -125,5 +125,6 @@ updateGame g = do
 -- -- implement in the game module, not here!
 -- -- don't want people joining midgame or when none is started
 -- -- track state - None - Organizing - In Progress - Suspended
+-- -- Read via pattern matches in case
 -- get username of person sending message for addPlayer
 -- rework eval to take tokenized line

@@ -12,7 +12,8 @@ data Card = Card { value :: Int -- "King" > "Queen" is false... how to do this?
 type Deck = [Card]
 type Hand = Deck -- more or less the same operations are applied
 
-data Game = None | Game [Player] [Deck] deriving (Eq, Show)
+data Game = None | Organizing [Player] [Deck] | Game [Player] [Deck]
+          | Suspended [Player] [Deck] deriving (Eq, Show)
 
 type Player = (String, Hand, Int) -- Name, hand, points
 
