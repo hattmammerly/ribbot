@@ -1,3 +1,5 @@
+-- ONLY WRITES INITIAL SETUP AND PINGS - NO LINKS POSTED, ETC
+
 import Data.Either
 import Data.List
 import Network
@@ -22,7 +24,7 @@ type Net = StateT Bot IO
 
 server = "irc.freenode.org"
 port = 6667
-chan = "#anime"
+chan = "#testmattbot"
 nick = "testmattbot"
 
 main = Ex.bracket connect disconnect loop
