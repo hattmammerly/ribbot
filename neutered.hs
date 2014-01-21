@@ -22,7 +22,7 @@ type Net = StateT Bot IO
 
 server = "irc.freenode.org"
 port = 6667
-chan = "#testmattbot"
+chan = "#anime"
 nick = "testmattbot"
 
 main = Ex.bracket connect disconnect loop
@@ -45,9 +45,9 @@ connect = notify $ do
 
 run :: Net ()
 run = do
-    write "NICK" nick
-    write "USER" (nick ++ " 0 * :matt testing a bot")
-    write "JOIN" chan
+    write' "NICK" nick
+    write' "USER" (nick ++ " 0 * :matt testing a bot")
+    write' "JOIN" chan
     gets socket >>= listen
 
 listen :: Handle -> Net ()
@@ -58,14 +58,13 @@ listen h = forever $ do
     then pong s
   else do
     scan (tokenize s)
-    eval (clean s) -- call tokenize
+    eval (clean s)
   where
     forever a = a >> forever a
-    clean = drop 1 . dropWhile (/= ':') . drop 1 -- replace w tokenize
+    clean = drop 1 . dropWhile (/= ':') . drop 1 -- gonna need to rework
     ping x = "PING :" `isPrefixOf` x
-    pong x = write "PONG" (':' : drop 6 x)
+    pong x = write' "PONG" (':' : drop 6 x)
 
--- Separate into name, command, target, whatever else, and message
 tokenize s = words (fst tmp) ++ (snd tmp : [])
     where tmp = span (/=':') $ drop 1 s
 
@@ -74,12 +73,11 @@ scan :: [String] -> Net () -- This function is messy!
 scan xs = do
     a <- io $ liftM rights $ sequence $ fmap getTitle (findURLs s) -- Extract [String] from [IO (Either ParserError String)] 
     mapM_ (\x -> privmsg ("Link Title: [ " ++ x ++ " ]")) a;
-    where s = drop 1 (last xs)
+    where s = drop 1  (last xs)
 
 -- Evaluate active bot commands
--- create new quit method other than killing process -- maybe if PM'd?
 eval :: String -> Net ()
--- eval "!quit" = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess) --
+eval "!quit" = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
 eval x | "!id " `isPrefixOf` x = privmsg (drop 4 x)
        | "!uno " `isPrefixOf` x = do
            g <- gets game
@@ -95,13 +93,18 @@ privmsg s = write "PRIVMSG" (chan ++ " :" ++ s)
 
 -- Send a message to the server
 -- -- -- Command -> Value
-write :: String -> String -> Net ()
-write s t = do
+write' :: String -> String -> Net ()
+write' s t = do
   h <- gets socket
   io $ hPrintf h "%s %s\r\n" s t
   io $ printf   ">%s %s\n"   s t
 
--- Convenience -- haskellwiki had this. I see no value.
+write :: String -> String -> Net ()
+write s t = do
+  h <- gets socket
+  io $ printf   ">%s %s\n"   s t
+
+-- Convenience -- haskellwiki had this. Personally I see no value.
 io :: IO a -> Net a
 io = liftIO
 
@@ -124,6 +127,13 @@ updateGame g = do
 -- figure out how to limit time when addPlayer can be called
 -- -- implement in the game module, not here!
 -- -- don't want people joining midgame or when none is started
+-- -- could write a stopwatch w/ state monad
+-- -- -- but I have to lug it around in Bot always?
 -- -- track state - None - Organizing - In Progress - Suspended
 -- get username of person sending message for addPlayer
--- rework eval to take tokenized line
+-- -- clean function strips that out
+-- redo clean function!
+-- -- tokenize irc line (include username & message at least)
+--
+-- Tentative Plan
+-- limit addPlayer function via game state in Cards module
