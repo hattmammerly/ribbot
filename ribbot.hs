@@ -58,7 +58,7 @@ listen h = forever $ do
     then pong s
   else do
     scan (tokenize s)
-    eval (clean s) -- call tokenize
+    eval (tokenize s)
   where
     forever a = a >> forever a
     clean = drop 1 . dropWhile (/= ':') . drop 1 -- replace w tokenize
@@ -66,32 +66,37 @@ listen h = forever $ do
     pong x = write "PONG" (':' : drop 6 x)
 
 -- Separate into name, command, target, whatever else, and message
-tokenize s = words (fst tmp) ++ (snd tmp : [])
+tokenize s = words (fst tmp) ++ ((drop 1 (snd tmp)) : [])
     where tmp = span (/=':') $ drop 1 s
 
 -- Scan for passive bot cues
 scan :: [String] -> Net () -- This function is messy!
 scan xs = do
     a <- io $ liftM rights $ sequence $ fmap getTitle (findURLs s) -- Extract [String] from [IO (Either ParserError String)] 
-    mapM_ (\x -> privmsg ("Link Title: [ " ++ x ++ " ]")) a;
+    mapM_ (\x -> privmsg chan ("Link Title: [ " ++ x ++ " ]")) a;
     where s = drop 1 (last xs)
 
 -- Evaluate active bot commands
--- create new quit method other than killing process -- maybe if PM'd?
-eval :: String -> Net ()
--- eval "!quit" = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess) --
-eval x | "!id " `isPrefixOf` x = privmsg (drop 4 x)
-       | "!uno " `isPrefixOf` x = do
-           g <- gets game
-           if g == None
-               then privmsg "Feature coming soon!" -- If no game, start one
-               else privmsg "There's already a game in progress, let's not get too crazy in here!"
-       | "!show" `isPrefixOf` x = showGame
+eval :: [String] -> Net ()
+eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ drop 4 msg
+             | ("!quit" == msg) && ("hattmammerly" == user)
+                 = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
+             | "!uno " `isPrefixOf` msg = do
+                 g <- gets game
+                 case g of None -> privmsg chan "Feature coming soon!"
+                           Organizing _ _ -> privmsg chan "Organizing one!"
+                           Game _ _ -> privmsg chan "There's already a game going!"
+                           Suspended _ _ -> privmsg chan "There's a suspended game."
+        where 
+            msg = last xs
+            user = takeWhile (/='!') x
 eval _ = return ()
 
--- Send a privmsg to current chan + server
-privmsg :: String -> Net ()
-privmsg s = write "PRIVMSG" (chan ++ " :" ++ s)
+
+
+-- Send a privmsg to given chan + server
+privmsg :: String -> String -> Net ()
+privmsg ch s = write "PRIVMSG" (ch ++ " :" ++ s)
 
 -- Send a message to the server
 -- -- -- Command -> Value
@@ -109,7 +114,7 @@ io = liftIO
 showGame :: Net ()
 showGame = do
     g <- gets game
-    privmsg (show g)
+    privmsg chan (show g)
 
 -- returns the bot with the updated game state
 updateGame :: Game -> Net ()
@@ -126,5 +131,3 @@ updateGame g = do
 -- -- don't want people joining midgame or when none is started
 -- -- track state - None - Organizing - In Progress - Suspended
 -- -- Read via pattern matches in case
--- get username of person sending message for addPlayer
--- rework eval to take tokenized line
