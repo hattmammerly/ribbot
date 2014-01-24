@@ -61,7 +61,6 @@ listen h = forever $ do
     eval (tokenize s)
   where
     forever a = a >> forever a
-    clean = drop 1 . dropWhile (/= ':') . drop 1 -- replace w tokenize
     ping x = "PING :" `isPrefixOf` x
     pong x = write "PONG" (':' : drop 6 x)
 
@@ -129,5 +128,3 @@ updateGame g = do
 -- figure out how to limit time when addPlayer can be called
 -- -- implement in the game module, not here!
 -- -- don't want people joining midgame or when none is started
--- -- track state - None - Organizing - In Progress - Suspended
--- -- Read via pattern matches in case
