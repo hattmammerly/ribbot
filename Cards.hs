@@ -1,6 +1,7 @@
 module Cards where
 
 -- import Data.Random.List
+import Data.List
 import Control.Monad
 import Control.Monad.State
 import System.Random
@@ -27,27 +28,28 @@ push :: Card -> State Deck () -- add card to hand or deck
 push c = state $ \(xs) -> ((),c:xs)
 
 -- Add player to game, only before it has started.
--- consider actually monadizing -> ((), Game)
-addPlayer :: Player -> Game -> Game
-addPlayer player None = Organizing player:[] []
-addPlayer player (Organizing players decks) = Organizing player:players decks
-addPlayer _ g = g
+-- I believe this works as a stateful computation?
+addPlayer :: Player -> Game -> ((), Game)
+addPlayer player None = ((), Organizing (player:[]) [])
+addPlayer player (Organizing players decks) = ((), Organizing (player:players) decks)
+addPlayer _ g = ((), g)
 
 -- Add a deck to the game - be it a deck, scrap pile, or 'river' or w/e
--- consider actually monadizing -> ((), Game)
-addDeck :: Deck -> Game -> Game
-addDeck deck None = Organizing players deck:[]
-addDeck deck (Organizing players decks) = Organizing players deck:decks
-addDeck deck (Game players decks) = Game players deck:decks
+-- I believe this works as a stateful computation?
+addDeck :: Deck -> Game -> ((), Game)
+addDeck deck None = ((), Organizing [] (deck:[]))
+addDeck deck (Organizing players decks) = ((), Organizing players (deck:decks))
+addDeck deck (Game players decks) = ((), Game players (deck:decks))
+-- Does this need a Suspended case? Do I even need Suspended?
 
--- This isn't so simple - what to with their points and cards? Game logic?
--- perhaps pop player -> (player, Game) and game logic can distribute
-removePlayer :: String -> Game -> Game
-removePlayer name (Organizing players decks) = Organizing (filter target players) decks
-                  where target = (\(player, _, _) -> (name /= player))
-removePlayer name (Game players decks) = Game (filter target players) decks
-                  where target = (\(player, _, _) -> (name /= player))
-removePlayer name (Suspended players decks) = Suspended (filter target players) decks
-                  where target = (\(player, _, _) -> (name /= player))
+-- This still needs to be tested!
+-- Pop player by name, so game logic can appropriately deal with cards, points
+removePlayer :: String -> Game -> (Player, Game)
+removePlayer name (Organizing players decks) = ((head (fst part)), (Organizing (tail (snd part)) decks))
+                  where part = partition (\(player, _, _) -> (name /= player)) players
+removePlayer name (Game players decks) = ((head (fst part)), (Game (tail (snd part)) decks))
+                  where part = partition (\(player, _, _) -> (name /= player)) players
+removePlayer name (Suspended players decks) = ((head (fst part)), (Suspended (tail (snd part)) decks))
+                  where part = partition (\(player, _, _) -> (name /= player)) players
 
 -- let f = do pop 3; push (Card 4 "Spades"); pop 3; pop 3; in runState f [Card a b | a <- [1..10], b <- ["Spades","Clubs","Hearts","Diamonds"]]
