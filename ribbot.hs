@@ -82,16 +82,18 @@ eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ 
                  = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
              | "!uno " `isPrefixOf` msg = do
                  g <- gets game
-                 case g of None -> privmsg chan "Feature coming soon!"
-                           Organizing _ _ -> privmsg chan "Organizing one!"
-                           Game _ _ -> privmsg chan "There's already a game going!"
-                           Suspended _ _ -> privmsg chan "There's a suspended game."
+                 case g of None -> do uno ( words (drop 5 msg)); privmsg chan "Feature coming soon!"
+                           Organizing _ _ -> do uno ( words (drop 5 msg)); privmsg chan "Organizing one!"
+                           Game _ _ -> do uno ( words (drop 5 msg)); privmsg chan "There's already a game going!"
+                           Suspended _ _ -> do uno ( words (drop 5 msg)); privmsg chan "There's a suspended game."
         where 
             msg = last xs
             user = takeWhile (/='!') x
 eval _ = return ()
 
-
+uno :: [String] -> Net ()
+-- uno ("add":xs) = do g < gets;
+uno _ = do g <- gets game; updateGame g;
 
 -- Send a privmsg to given chan + server
 privmsg :: String -> String -> Net ()

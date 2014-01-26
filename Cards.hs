@@ -52,4 +52,17 @@ removePlayer name (Game players decks) = ((head (fst part)), (Game (tail (snd pa
 removePlayer name (Suspended players decks) = ((head (fst part)), (Suspended (tail (snd part)) decks))
                   where part = partition (\(player, _, _) -> (name /= player)) players
 
+-- Draw n cards from deck
+-- actually must return hand AND deck minus those cards
+-- something to the effect of sequence $ repeat n $ pop 1 $ deck
+-- pop would have to be reworked. sequence stateful computations?
+drawCards :: Int -> Deck -> IO [Card]
+drawCards n deck = liftM (take n) $ liftM (shuffle' deck (length deck)) $ getStdGen
+
+
 -- let f = do pop 3; push (Card 4 "Spades"); pop 3; pop 3; in runState f [Card a b | a <- [1..10], b <- ["Spades","Clubs","Hearts","Diamonds"]]
+
+
+-- TODO
+-- should this be stateful computations inside of IO?
+-- -- maybe this sort of thing is solved by io alias in ribbot?

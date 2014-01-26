@@ -1,3 +1,7 @@
+depends
+curl
+random-fu
+
 TODO  
 move todo list from ribbot.hs to the readme
 
