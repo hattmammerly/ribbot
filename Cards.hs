@@ -63,6 +63,27 @@ drawCards n deck = liftM (take n) $ liftM (shuffle' deck (length deck)) $ getStd
 -- let f = do pop 3; push (Card 4 "Spades"); pop 3; pop 3; in runState f [Card a b | a <- [1..10], b <- ["Spades","Clubs","Hearts","Diamonds"]]
 
 
+
+
+-- THINKING
+-- this commit is kind of cheating but I wanna submit at least one a day
+-- I'm just not feeling up to coding right now. but anyway ----
+-- maybe something like
+-- execute :: String -> IO Game -> IO Game
+-- execute string baah = do
+--     game <- baah
+--     parse string
+--     g <- getStdGen
+--     create new Game
+--     y'know with all the pure cards functions i wrote already
+--     return Game
+--
+-- then over in ribbot i guess I'll do gets game and send IO Game to cards
+-- the game state inside the bot will be IO Game instead of just Game
+-- except rename execute to be the game in question!!! ohhh!!!!!!!
+-- okay I know how to organize this stuff I think
+--
+
 -- TODO
 -- should this be stateful computations inside of IO?
 -- -- maybe this sort of thing is solved by io alias in ribbot?
