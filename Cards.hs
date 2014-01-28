@@ -7,17 +7,16 @@ import Control.Monad.State
 import System.Random
 import System.Random.Shuffle
 
+-- use fromIntegral to convert eg 10 to Jack?
 data Card = Card { value :: Int -- "King" > "Queen" is false... how to do this?
                  , suit :: String } deriving (Eq, Show)
-
 type Deck = [Card]
 type Hand = Deck -- more or less the same operations are applied
+type Player = (String, Hand, Int) -- Name, hand, points
 
 -- Do I need suspended? 
 data Game = None | Organizing [Player] [Deck] | Game [Player] [Deck]
           | Suspended [Player] [Deck] deriving (Eq, Show)
-
-type Player = (String, Hand, Int) -- Name, hand, points
 
 -- use shuffle' to shuffle deck ; liftM (shuffle' list (length list)) $ getStdGen
 
@@ -54,11 +53,14 @@ removePlayer name (Suspended players decks) = ((head (fst part)), (Suspended (ta
 
 -- Draw n cards from deck
 -- actually must return hand AND deck minus those cards
--- something to the effect of sequence $ repeat n $ pop 1 $ deck
--- pop would have to be reworked. sequence stateful computations?
+-- rework - sequence pop 0s against shuffleDeck deck somehow
+-- looks like I get to actually use monad stuff!!
 drawCards :: Int -> Deck -> IO [Card]
 drawCards n deck = liftM (take n) $ liftM (shuffle' deck (length deck)) $ getStdGen
 
+-- exportable pure shuffle function
+shuffleDeck :: (RandomGen g) => Deck -> g -> Deck
+shuffleDeck deck g = shuffle' deck (length deck) g
 
 -- let f = do pop 3; push (Card 4 "Spades"); pop 3; pop 3; in runState f [Card a b | a <- [1..10], b <- ["Spades","Clubs","Hearts","Diamonds"]]
 
@@ -66,18 +68,6 @@ drawCards n deck = liftM (take n) $ liftM (shuffle' deck (length deck)) $ getStd
 
 
 -- THINKING
--- this commit is kind of cheating but I wanna submit at least one a day
--- I'm just not feeling up to coding right now. but anyway ----
--- maybe something like
--- execute :: String -> IO Game -> IO Game
--- execute string baah = do
---     game <- baah
---     parse string
---     g <- getStdGen
---     create new Game
---     y'know with all the pure cards functions i wrote already
---     return Game
---
 -- then over in ribbot i guess I'll do gets game and send IO Game to cards
 -- the game state inside the bot will be IO Game instead of just Game
 -- except rename execute to be the game in question!!! ohhh!!!!!!!

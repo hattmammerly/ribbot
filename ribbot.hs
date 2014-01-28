@@ -16,7 +16,7 @@ import Title -- title.hs module in same directory
 
 -- Net monad, wrapper over IO, carrying the bot's immutable state
 data Bot = Nope | Bot { socket :: Handle -- Nope is the most bullshit way to solve my problem
-                      , game :: Game }
+                      , game :: IO Game }
 type Net = StateT Bot IO
 -- type Net = StateT Game (ReaderT Bot IO)
 
@@ -36,7 +36,8 @@ connect :: IO Bot
 connect = notify $ do
     h <- connectTo server (PortNumber port)
     hSetBuffering h NoBuffering
-    return (Bot h None) -- initially no game will be in progress
+    return (Bot h (return None)) -- initially no game will be in progress
+    -- nested return is probably really stupid
   where
     notify a = Ex.bracket_
       (printf "Connecting to %s ... " server >> hFlush stdout)
@@ -78,22 +79,18 @@ scan xs = do
 -- Evaluate active bot commands
 eval :: [String] -> Net ()
 eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ drop 4 msg
-             | ("!quit" == msg) && ("hattmammerly" == user)
+            | ("!quit" == msg) && ("hattmammerly" == user)
                  = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
-             | "!uno " `isPrefixOf` msg = do
+            | "!uno " `isPrefixOf` msg = do -- send game and line to uno
                  g <- gets game
-                 case g of None -> do uno ( words (drop 5 msg)); privmsg chan "Feature coming soon!"
-                           Organizing _ _ -> do uno ( words (drop 5 msg)); privmsg chan "Organizing one!"
-                           Game _ _ -> do uno ( words (drop 5 msg)); privmsg chan "There's already a game going!"
-                           Suspended _ _ -> do uno ( words (drop 5 msg)); privmsg chan "There's a suspended game."
+                 updateGame $ uno (user: init xs ++ [(drop 5 msg)]) g
+--          | "!show" == msg = do
+--               g <- gets game
+--               showGame g
         where 
             msg = last xs
             user = takeWhile (/='!') x
 eval _ = return ()
-
-uno :: [String] -> Net ()
--- uno ("add":xs) = do g < gets;
-uno _ = do g <- gets game; updateGame g;
 
 -- Send a privmsg to given chan + server
 privmsg :: String -> String -> Net ()
@@ -112,21 +109,31 @@ io :: IO a -> Net a
 io = liftIO
 
 -- Print game for debugging purposes I suppose
-showGame :: Net ()
-showGame = do
-    g <- gets game
+showGame :: Game -> Net ()
+showGame g = do
     privmsg chan (show g)
 
 -- returns the bot with the updated game state
-updateGame :: Game -> Net ()
+updateGame :: IO Game -> Net ()
 updateGame g = do
     h <- gets socket
     put $ Bot h g 
 
+-- uno game logic - own file, import ribbot.hs and random stuff?
+-- need to work out how to send messages out to users
+-- Game encased in IO encased in Bot inside a Net
+uno :: [String] -> IO Game -> IO Game
+uno xs iogame = do
+--  gen <- getStdGen
+  game <- iogame
+  -- privmsg chan "playing uno!" -- can't do this
+  return game -- tentative, obviously
+
+
 -- TODO
 -- reorganize code
 -- -- move uno stuff to another file
--- -- -- has to import main file to return Net () in functions
+-- -- -- has to import main file to return Net () in functions?
 -- figure out how to limit time when addPlayer can be called
 -- -- implement in the game module, not here!
 -- -- don't want people joining midgame or when none is started
