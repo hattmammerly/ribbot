@@ -127,6 +127,8 @@ uno xs iogame = do
 --  gen <- getStdGen
   game <- iogame
   -- privmsg chan "playing uno!" -- can't do this
+  -- printf "%s" "test!" -- no type error but also no action taken...?
+  -- added complication of requiring the handle. can't gets inside here, not stateT
   return game -- tentative, obviously
 
 
