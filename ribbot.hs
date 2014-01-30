@@ -2,6 +2,7 @@ import Data.Either
 import Data.List
 import Network
 import System.IO
+import System.IO.Unsafe
 import System.Exit
 import Control.Arrow
 import Control.Monad
@@ -11,14 +12,13 @@ import Control.Exception as Ex
 import Text.Printf
 import Prelude hiding (catch)
 import Cards -- Cards.hs module in the same directory as this file
-import Title -- title.hs module in same directory
+import Title -- Title.hs module in same directory
 
 
 -- Net monad, wrapper over IO, carrying the bot's immutable state
 data Bot = Nope | Bot { socket :: Handle -- Nope is the most bullshit way to solve my problem
-                      , game :: IO Game }
+                      , game :: Game }
 type Net = StateT Bot IO
--- type Net = StateT Game (ReaderT Bot IO)
 
 server = "irc.freenode.org"
 port = 6667
@@ -36,7 +36,7 @@ connect :: IO Bot
 connect = notify $ do
     h <- connectTo server (PortNumber port)
     hSetBuffering h NoBuffering
-    return (Bot h (return None)) -- initially no game will be in progress
+    return (Bot h None) -- initially no game will be in progress
     -- nested return is probably really stupid
   where
     notify a = Ex.bracket_
@@ -84,15 +84,14 @@ eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ 
             | "!uno " `isPrefixOf` msg = do -- send game and line to uno
                  g <- gets game
                  updateGame $ uno (user: init xs ++ [(drop 5 msg)]) g
---          | "!show" == msg = do
---               g <- gets game
---               showGame g
-        where 
-            msg = last xs
-            user = takeWhile (/='!') x
+            | "!show" == msg = do g <- gets game; showGame g
+            | "!seq" == msg = privmsgSeq $ zip(take 3 $ repeat "#testmattbot") ["one", "two", "three"] 
+            where 
+                msg = last xs
+                user = takeWhile (/='!') x
 eval _ = return ()
 
--- Send a privmsg to given chan + server
+-- Send a privmsg to given channel on freenode
 privmsg :: String -> String -> Net ()
 privmsg ch s = write "PRIVMSG" (ch ++ " :" ++ s)
 
@@ -108,39 +107,37 @@ write s t = do
 io :: IO a -> Net a
 io = liftIO
 
--- Print game for debugging purposes I suppose
-showGame :: Game -> Net ()
-showGame g = do
-    privmsg chan (show g)
+-- List of (Target, msg) -- execute all writes
+privmsgSeq ((ch, msg) : msgs) = do
+    privmsg ch msg
+    privmsgSeq msgs
+privmsgSeq [] = return ()
 
--- returns the bot with the updated game state
+-- Sends queued messages and returns the bot with the updated game state
+-- Can probably be cleaned up a tad
 updateGame :: IO Game -> Net ()
-updateGame g = do
+updateGame iogame = do
     h <- gets socket
-    put $ Bot h g 
+    case game of None -> put $ Bot h game
+                 Organizing players decks msgs -> do
+                     privmsgSeq msgs
+                     put $ Bot h (Organizing players decks [])
+                 Game players decks msgs -> do
+                     privmsgSeq msgs
+                     put $ Bot h (Game players decks [])
+                 Suspended players decks msgs -> do
+                     privmsgSeq msgs
+                     put $ Bot h (Suspended players decks [])
+    where game = unsafePerformIO iogame
 
--- uno game logic - own file, import ribbot.hs and random stuff?
--- need to work out how to send messages out to users
--- Game encased in IO encased in Bot inside a Net
-uno :: [String] -> IO Game -> IO Game
-uno xs iogame = do
---  gen <- getStdGen
-  game <- iogame
-  -- privmsg chan "playing uno!" -- can't do this
-  putStrLn "test!" -- no type error but also no action taken...?
-  -- added complication of requiring the handle. can't gets inside here, not stateT
-  return game -- tentative, obviously
--- Am I going to need to craft messages to be sent and send them all the way
--- back up to Net () to send them? rework Game type and updateGame to send
--- queued messages? that seems really stupid. But I need socket to msg server
--- yeah that is REALLY stupid but it seems I'll have to
--- uno returns (Messages, IO Game) - updateGame sequence msgs -- put Bot h g
--- privmsg ch msg should be sufficient, where ch can be a private msg to user
+-- Write the game to #testmattbot for debugging I guess
+showGame :: Game -> Net ()
+showGame game = do
+    privmsg chan (show game)
 
--- TODO
--- reorganize code
--- -- move uno stuff to another file
--- -- -- has to import main file to return Net () in functions?
--- figure out how to limit time when addPlayer can be called
--- -- implement in the game module, not here!
--- -- don't want people joining midgame or when none is started
+-- Uno game logic
+-- first player in list takes turn, popped, appended to end of list 
+uno :: [String] -> Game -> IO Game
+uno xs game = do
+    -- gen <- getStdGen -- need to import random stuff, maybe push to other file
+    return game -- tentative, obviously
