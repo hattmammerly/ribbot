@@ -127,10 +127,15 @@ uno xs iogame = do
 --  gen <- getStdGen
   game <- iogame
   -- privmsg chan "playing uno!" -- can't do this
-  -- printf "%s" "test!" -- no type error but also no action taken...?
+  putStrLn "test!" -- no type error but also no action taken...?
   -- added complication of requiring the handle. can't gets inside here, not stateT
   return game -- tentative, obviously
-
+-- Am I going to need to craft messages to be sent and send them all the way
+-- back up to Net () to send them? rework Game type and updateGame to send
+-- queued messages? that seems really stupid. But I need socket to msg server
+-- yeah that is REALLY stupid but it seems I'll have to
+-- uno returns (Messages, IO Game) - updateGame sequence msgs -- put Bot h g
+-- privmsg ch msg should be sufficient, where ch can be a private msg to user
 
 -- TODO
 -- reorganize code
