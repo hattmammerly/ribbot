@@ -118,6 +118,7 @@ privmsgSeq [] = return ()
 updateGame :: IO Game -> Net ()
 updateGame iogame = do
     h <- gets socket
+    showGame game
     case game of None -> put $ Bot h game
                  Organizing players decks msgs -> do
                      privmsgSeq msgs
@@ -139,5 +140,10 @@ showGame game = do
 -- first player in list takes turn, popped, appended to end of list 
 uno :: [String] -> Game -> IO Game
 uno xs game = do
+    -- tentatively just return something with a message to be fired off
+    -- time to implement game logic! or, it will be after math lecture
+    case game of None -> return (Organizing [] [] [("#testmattbot", "test!")])
+                 Organizing ps ds ms -> return (Organizing ps ds [("#testmattbot","test!")])
+                 Game ps ds ms -> return (Game ps ds [("#testmattbot","test!")])
+                 Suspended ps ds ms -> return (Suspended ps ds [("#testmattbot","test!")])
     -- gen <- getStdGen -- need to import random stuff, maybe push to other file
-    return game -- tentative, obviously

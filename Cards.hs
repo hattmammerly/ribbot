@@ -63,11 +63,11 @@ shuffleDeck :: (RandomGen g) => Deck -> g -> Deck
 shuffleDeck deck g = shuffle' deck (length deck) g
 
 -- Add a message to the queue to be sent
-addMsg :: Deck -> Game -> ((), Game)
-addMsg msg None = ((), Organizing [] [] msg:[])
-addMsg msg (Organizing players decks msgs) = ((), Organizing players decks msg:msgs)
-addMsg msg (Game players decks msgs) = ((), Game players decks msg:msgs)
-addMsg msg (Suspended players decks msgs) = ((), Suspended players decks msg:msgs)
+-- addMsg :: Deck -> Game -> ((), Game)
+-- addMsg msg None = ((), Organizing [] [] msg:[])
+-- addMsg msg (Organizing players decks msgs) = ((), Organizing players decks msg:msgs)
+-- addMsg msg (Game players decks msgs) = ((), Game players decks msg:msgs)
+-- addMsg msg (Suspended players decks msgs) = ((), Suspended players decks msg:msgs)
 
 
 -- let f = do pop 3; push (Card 4 "Spades"); pop 3; pop 3; in runState f [Card a b | a <- [1..10], b <- ["Spades","Clubs","Hearts","Diamonds"]]
