@@ -83,8 +83,9 @@ eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ 
                  = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
             | "!uno " `isPrefixOf` msg = do -- send game and line to uno
                  g <- gets game
-                 updateGame $ uno (user: init xs ++ [(drop 5 msg)]) g
+                 updateGame $ uno (user : (tail (init xs)) ++ [(drop 5 msg)]) g
             | "!show" == msg = do g <- gets game; showGame g
+            | "!put" == msg = do h <- gets socket; put $ Bot h (Game [] [] [(chan,"test")])
             | "!seq" == msg = privmsgSeq $ zip(take 3 $ repeat "#testmattbot") ["one", "two", "three"] 
             where 
                 msg = last xs
@@ -118,7 +119,7 @@ privmsgSeq [] = return ()
 updateGame :: IO Game -> Net ()
 updateGame iogame = do
     h <- gets socket
-    showGame game
+--    showGame game
     case game of None -> put $ Bot h game
                  Organizing players decks msgs -> do
                      privmsgSeq msgs
@@ -143,16 +144,15 @@ uno xs game = do
     -- tentatively just return something with a message to be fired off
     -- time to implement game logic! or, it will be after math lecture
     case tokens of [] -> return game
-                   ("status'":xs) -> return $ snd $ addMsg (chan, show game) game
-                   ("status":xs) -> case game of None -> return (Organizing [] [] ((chan, show game):[]))
-                                                 Organizing ps ds ms -> return (Organizing ps ds ((chan, show game):ms))
-                                                 Game ps ds ms -> return (Game ps ds ((chan, show game):ms))
-                                                 Suspended ps ds ms -> return (Game ps ds ((chan, show game):ms))
-                   ("aye":xs) -> return $ snd $ addPlayer (user, [], 0) game
+                   ("id":xs) -> return game
+                   ("addmsg":xs) -> return $ addMsg (chan, "test!") game
+                   ("test":xs) -> return (Game [] [] [("#testmattbot","test!!!")])
+                   ("status":xs) -> return $ addMsg (chan, show game) game
+                   ("aye":xs) -> return $ addPlayer (user, [], 0) game
 --    case game of None -> return (Organizing [] [] [("#testmattbot", "test!")])
 --                 Organizing ps ds ms -> return (Organizing ps ds [("#testmattbot","test!")])
 --                 Game ps ds ms -> return (Game ps ds [("#testmattbot","test!")])
 --                 Suspended ps ds ms -> return (Suspended ps ds [("#testmattbot","test!")])
     -- gen <- getStdGen -- need to import random stuff, maybe push to other file
-    where tokens = words $ drop 5 $ last xs
+    where tokens = words $ last xs
           user = takeWhile (/='!') $ head xs

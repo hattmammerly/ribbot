@@ -35,17 +35,17 @@ playCard i hand = (hand !! i, take i hand ++ drop (i+1) hand)
 
 -- Add player to game, only before it has started.
 -- I believe this works as a stateful computation?
-addPlayer :: Player -> Game -> ((), Game)
-addPlayer player None = ((), Organizing (player:[]) [] [])
-addPlayer player (Organizing players decks msgs) = ((), Organizing (player:players) decks msgs)
-addPlayer _ g = ((), g)
+addPlayer :: Player -> Game -> Game
+addPlayer player None = Organizing (player:[]) [] []
+addPlayer player (Organizing players decks msgs) = Organizing (player:players) decks msgs
+addPlayer _ g = g
 
 -- Add a deck to the game - be it a deck, scrap pile, or 'river' or w/e
 -- I believe this works as a stateful computation?
-addDeck :: Deck -> Game -> ((), Game)
-addDeck deck None = ((), Organizing [] (deck:[]) [])
-addDeck deck (Organizing players decks msgs) = ((), Organizing players (deck:decks) msgs)
-addDeck deck (Game players decks msgs) = ((), Game players (deck:decks) msgs)
+addDeck :: Deck -> Game -> Game
+addDeck deck None = Organizing [] (deck:[]) []
+addDeck deck (Organizing players decks msgs) = Organizing players (deck:decks) msgs
+addDeck deck (Game players decks msgs) = Game players (deck:decks) msgs
 -- Does this need a Suspended case? Do I even need Suspended?
 
 -- This still needs to be tested!
@@ -68,11 +68,11 @@ shuffleDeck :: (RandomGen g) => Deck -> g -> Deck
 shuffleDeck deck g = shuffle' deck (length deck) g
 
 -- Add a message to the queue to be sent
-addMsg :: (String, String) -> Game -> ((), Game)
-addMsg msg None = ((), Organizing [] [] (msg:[]))
-addMsg msg (Organizing players decks msgs) = ((), Organizing players decks (msg:msgs))
-addMsg msg (Game players decks msgs) = ((), Game players decks (msg:msgs))
-addMsg msg (Suspended players decks msgs) = ((), Suspended players decks (msg:msgs))
+addMsg :: (String, String) -> Game -> Game
+addMsg msg None = Organizing [] [] (msg:[])
+addMsg msg (Organizing players decks msgs) = Organizing players decks (msg:msgs)
+addMsg msg (Game players decks msgs) = Game players decks (msg:msgs)
+addMsg msg (Suspended players decks msgs) = Suspended players decks (msg:msgs)
 
 
 -- let f = do pop 3; push (Card 4 "Spades"); pop 3; pop 3; in runState f [Card a b | a <- [1..10], b <- ["Spades","Clubs","Hearts","Diamonds"]]
