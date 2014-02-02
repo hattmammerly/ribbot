@@ -142,8 +142,17 @@ uno :: [String] -> Game -> IO Game
 uno xs game = do
     -- tentatively just return something with a message to be fired off
     -- time to implement game logic! or, it will be after math lecture
-    case game of None -> return (Organizing [] [] [("#testmattbot", "test!")])
-                 Organizing ps ds ms -> return (Organizing ps ds [("#testmattbot","test!")])
-                 Game ps ds ms -> return (Game ps ds [("#testmattbot","test!")])
-                 Suspended ps ds ms -> return (Suspended ps ds [("#testmattbot","test!")])
+    case tokens of [] -> return game
+                   ("status'":xs) -> return $ snd $ addMsg (chan, show game) game
+                   ("status":xs) -> case game of None -> return (Organizing [] [] ((chan, show game):[]))
+                                                 Organizing ps ds ms -> return (Organizing ps ds ((chan, show game):ms))
+                                                 Game ps ds ms -> return (Game ps ds ((chan, show game):ms))
+                                                 Suspended ps ds ms -> return (Game ps ds ((chan, show game):ms))
+                   ("aye":xs) -> return $ snd $ addPlayer (user, [], 0) game
+--    case game of None -> return (Organizing [] [] [("#testmattbot", "test!")])
+--                 Organizing ps ds ms -> return (Organizing ps ds [("#testmattbot","test!")])
+--                 Game ps ds ms -> return (Game ps ds [("#testmattbot","test!")])
+--                 Suspended ps ds ms -> return (Suspended ps ds [("#testmattbot","test!")])
     -- gen <- getStdGen -- need to import random stuff, maybe push to other file
+    where tokens = words $ drop 5 $ last xs
+          user = takeWhile (/='!') $ head xs
