@@ -1,6 +1,6 @@
 depends  
 curl  
-random-fu  
+random-shuffle  
 
 TODO  
 migrate Uno code to its own file  
