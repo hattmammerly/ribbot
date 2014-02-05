@@ -5,6 +5,9 @@ import System.Random
 import System.Random.Shuffle
 import System.IO
 
+
+
+
 -- Routing, so we can be a little cleaner!
 -- Different game states will have different options available, but case is ugly
 -- then again, case would allow me to have those recurring 'where's only once
@@ -33,7 +36,8 @@ unoOrganizing xs game@(Organizing ps ds ms) = do
                    ("aye":xs) -> return $ addPlayer (user, [], 0) $ addMsg (chan, user ++ " has joined the game.") game
                    ("start":xs) -> if (length ps > 0)
                                    then
-                                     return $ addMsg (chan, "And here we go! First up is " ++ getName (head ps)) (Game ps ds ms)
+                                     return $ addMsg (chan, "And here we go! First up is " ++ getName (head ps)) $
+                                       tellNext (Game ps ds ms)
                                    else return $ addMsg (chan, "Try adding some players first.") game
                    ("forfeit":xs) -> return $ snd $ removePlayer user $ addMsg (chan, user ++ " is a quitter!") game
                    xs -> return game
@@ -54,6 +58,12 @@ unoGame xs game@(Game ps ds ms) = do
 -- get name of player for convenience
 getName :: Player -> String
 getName player@(name, _, _) = name
+getHand :: Player -> Hand
+getHand player@(_, hand, _) = hand
+getScore :: Player -> Int
+getScore player@(_, _, score) = score
+
+tellNext game@(Game ps ds ms) = addMsg (getName (head ps), show (getHand (head ps))) game
 
 -- Read others' code so I can see how to deal with these longass lines
 -- I waste a lot of space indenting to case blocks, etc

@@ -136,3 +136,5 @@ updateGame iogame = do
 showGame :: Game -> Net ()
 showGame game = do
     privmsg chan (show game)
+
+-- eventually make it so i can write to arbitrary channels with !id in a pm
