@@ -80,6 +80,8 @@ scan xs = do
 -- Evaluate active bot commands
 eval :: [String] -> Net ()
 eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ drop 4 msg
+            | "!imp" `isPrefixOf` msg && "hattmammerly" == user = let (ch, m) = break (==' ') (drop 5 msg)
+                                                                  in privmsg ch (drop 1 m)
             | ("!quit" == msg) && ("hattmammerly" == user)
                  = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
             | "!uno " `isPrefixOf` msg = do -- send game and line to uno
@@ -119,7 +121,6 @@ privmsgSeq [] = return ()
 updateGame :: IO Game -> Net ()
 updateGame iogame = do
     h <- gets socket
---    showGame game
     case game of None -> put $ Bot h game
                  Organizing players decks msgs -> do
                      privmsgSeq msgs
@@ -137,4 +138,4 @@ showGame :: Game -> Net ()
 showGame game = do
     privmsg chan (show game)
 
--- eventually make it so i can write to arbitrary channels with !id in a pm
+-- eventually add channel management interface

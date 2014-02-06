@@ -5,9 +5,6 @@ import System.Random
 import System.Random.Shuffle
 import System.IO
 
-
-
-
 -- Routing, so we can be a little cleaner!
 -- Different game states will have different options available, but case is ugly
 -- then again, case would allow me to have those recurring 'where's only once
@@ -45,6 +42,7 @@ unoOrganizing xs game@(Organizing ps ds ms) = do
           user = head xs
           chan = last $ init xs
 
+-- Oh gosh, multiple uses of xs is confusing!
 unoGame :: [String] -> Game -> IO Game
 unoGame xs game@(Game ps ds ms) = do
     case tokens of ("organize":xs) -> return $ addMsg (chan, "Game in progress.") game
@@ -54,6 +52,7 @@ unoGame xs game@(Game ps ds ms) = do
     where tokens = words $ last xs
           user = head xs
           chan = last $ init xs
+
 
 -- get name of player for convenience
 getName :: Player -> String
@@ -65,9 +64,11 @@ getScore player@(_, _, score) = score
 
 tellNext game@(Game ps ds ms) = addMsg (getName (head ps), show (getHand (head ps))) game
 
+-- TODO
+-- Deck should be generic list, cards defined on per-game basis
 -- Read others' code so I can see how to deal with these longass lines
 -- I waste a lot of space indenting to case blocks, etc
 -- Add game termination
 -- Give players hands when they join
 -- Put cards back in deck when forfeit
--- Add in playing cards, etc
+-- Add in playing cards, etc - don't bother until card type is worked out!
