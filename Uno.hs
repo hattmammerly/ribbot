@@ -5,6 +5,24 @@ import System.Random
 import System.Random.Shuffle
 import System.IO
 
+-- Okay I don't feel like thinking more tonight
+-- Order doesn't matter in Uno, just need equality
+-- Create this card, make Game and Player use generic lists
+-- Create a full uno deck, put in game on creation
+-- Keep a played-cards deck, reshuffle that when out of cards
+-- Draw seven cards on player creation - concat more decks for more players
+-- how to check for winners/empty decks? Make necessary changes and repass to uno?
+-- 
+data Color = Red | Blue | Yellow | Green | Misc
+data Value = Wild | Wild Draw Four | Skip | Reverse |
+             Draw Two | Draw Four | One | Two | Three |
+             Four | Five | Six | Seven | Eight | Nine
+data Card = {color :: Color, value :: Value} deriving (Eq, Ord, Show)
+
+instance Eq Color where
+    (==) _ _ = True
+
+
 -- Routing, so we can be a little cleaner!
 -- Different game states will have different options available, but case is ugly
 -- then again, case would allow me to have those recurring 'where's only once
