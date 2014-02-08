@@ -18,10 +18,10 @@ import System.IO
 -- Same deal for player. And since game takes a type arg...
 -- Bot also needs one, so Net needs one, and weird shit happens
 data Color = Red | Blue | Yellow | Green | Misc deriving (Show)
-data Value = Wild | Wild Draw Four | Skip | Reverse |
-             Draw Two | Draw Four | One | Two | Three |
+data Value = Wild | WildDrawFour | Skip | Reverse |
+             DrawTwo | DrawFour | One | Two | Three |
              Four | Five | Six | Seven | Eight | Nine deriving (Show, Eq)
-data Card = {color :: Color, value :: Value} deriving (Eq, Ord, Show)
+type UnoCard = (Color, Value)
 
 instance Eq Color where
     (==) _ _ = True
