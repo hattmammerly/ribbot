@@ -12,11 +12,15 @@ import System.IO
 -- Keep a played-cards deck, reshuffle that when out of cards
 -- Draw seven cards on player creation - concat more decks for more players
 -- how to check for winners/empty decks? Make necessary changes and repass to uno?
--- 
-data Color = Red | Blue | Yellow | Green | Misc
+
+-- TURNS OUT I NEED TO REDO ALL TYPES EVERYWHEREEEEE
+-- for example Game must be defined data Game a = Game [Players] [[a]] [(String, String)]
+-- Same deal for player. And since game takes a type arg...
+-- Bot also needs one, so Net needs one, and weird shit happens
+data Color = Red | Blue | Yellow | Green | Misc deriving (Show)
 data Value = Wild | Wild Draw Four | Skip | Reverse |
              Draw Two | Draw Four | One | Two | Three |
-             Four | Five | Six | Seven | Eight | Nine
+             Four | Five | Six | Seven | Eight | Nine deriving (Show, Eq)
 data Card = {color :: Color, value :: Value} deriving (Eq, Ord, Show)
 
 instance Eq Color where
