@@ -8,11 +8,24 @@ import System.Random
 import System.Random.Shuffle
 
 -- use fromIntegral to convert eg 10 to Jack?
-data Card = Card { value :: Int -- "King" > "Queen" is false... how to do this?
-                 , suit :: String } deriving (Eq, Show)
+-- data Card = Card { value :: Int -- "King" > "Queen" is false... how to do this?
+--                  , suit :: String } deriving (Eq, Show)
+
+data Color = Red | Blue | Yellow | Green | Misc deriving (Show)
+data Value = Wild | WildDrawFour | Skip | Reverse |
+             DrawTwo | DrawFour | One | Two | Three |
+             Four | Five | Six | Seven | Eight | Nine deriving (Show, Eq)
+type Card = (Color, Value)
+instance Eq Color where
+    (==) _ _ = True
 type Deck = [Card]
 type Hand = Deck -- more or less the same operations are applied
 type Player = (String, Hand, Int) -- Name, hand, points
+
+unoDeck = concat $ replicate 2 [ (a,b) | a <- [Red, Blue, Yellow, Green],
+                                  b <- [One, Two, Three, Four, Five, Six, Seven, Eight, Nine,
+                                        Reverse, Skip, DrawTwo, DrawFour] ] ++
+                   replicate 4 [ (Misc, c) | c <- [Wild, WildDrawFour] ]
 
 -- Do I want a type Message = (String, String)?
 -- Do I need suspended? 

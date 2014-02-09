@@ -13,19 +13,11 @@ import System.IO
 -- Draw seven cards on player creation - concat more decks for more players
 -- how to check for winners/empty decks? Make necessary changes and repass to uno?
 
--- TURNS OUT I NEED TO REDO ALL TYPES EVERYWHEREEEEE
+-- TURNS OUT I NEED TO REDO ALL TYPES EVERYWHEREEEEE for multiple card times
+-- hardcode to Uno for now, redesign later
 -- for example Game must be defined data Game a = Game [Players] [[a]] [(String, String)]
 -- Same deal for player. And since game takes a type arg...
 -- Bot also needs one, so Net needs one, and weird shit happens
-data Color = Red | Blue | Yellow | Green | Misc deriving (Show)
-data Value = Wild | WildDrawFour | Skip | Reverse |
-             DrawTwo | DrawFour | One | Two | Three |
-             Four | Five | Six | Seven | Eight | Nine deriving (Show, Eq)
-type UnoCard = (Color, Value)
-
-instance Eq Color where
-    (==) _ _ = True
-
 
 -- Routing, so we can be a little cleaner!
 -- Different game states will have different options available, but case is ugly
@@ -56,7 +48,7 @@ unoOrganizing xs game@(Organizing ps ds ms) = do
                    ("start":xs) -> if (length ps > 0)
                                    then
                                      return $ addMsg (chan, "And here we go! First up is " ++ getName (head ps)) $
-                                       tellNext (Game ps ds ms)
+                                       tellNext (Game ps (unoDeck:ds) ms)
                                    else return $ addMsg (chan, "Try adding some players first.") game
                    ("forfeit":xs) -> return $ snd $ removePlayer user $ addMsg (chan, user ++ " is a quitter!") game
                    xs -> return game
