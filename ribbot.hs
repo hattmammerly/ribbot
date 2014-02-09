@@ -95,8 +95,15 @@ eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ 
 eval _ = return ()
 
 -- Send a privmsg to given channel on freenode
+-- Break longer messages to send in more than one burst
 privmsg :: String -> String -> Net ()
-privmsg ch s = write "PRIVMSG" (ch ++ " :" ++ s)
+privmsg ch s = if (len > 500) then do
+        write "PRIVMSG" (ch ++ " :" ++ (take (400 - length ch) s))
+        privmsg ch (drop (400 - length ch) s) -- write the rest of s
+    else do
+        write "PRIVMSG" (ch ++ " :" ++ s)
+    where 
+        len = length ("PRIVMSG " ++ ch ++ " :" ++ s)
 
 -- Send a message to the server
 -- -- -- Command -> Value
