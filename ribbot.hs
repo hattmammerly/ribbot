@@ -146,3 +146,12 @@ showGame game = do
     privmsg chan (show game)
 
 -- eventually add channel management interface
+-- track joined chans in bot
+-- take join chan from eval, write join chan and add chan to list
+-- list is print array
+-- part chan is pop chan from array, write part chan if exists
+-- broadcast msg is privmsgSeq [(ch, msg) | ch <- chans]
+
+
+-- a total rewrite is in order in a few months i think
+-- after i clear my head
