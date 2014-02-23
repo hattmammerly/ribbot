@@ -80,6 +80,7 @@ eval :: [String] -> Net ()
 eval (x:xs) | "!id " `isPrefixOf` msg && "mathu" == user = privmsg chan $ drop 4 msg
             | "!imp " `isPrefixOf` msg && "mathu" == user = let (ch, m) = break (==' ') (drop 5 msg)
                                                                   in privmsg ch (drop 1 m)
+            | "!broadcast " `isPrefixOf` msg && "mathu" == user = do joined <- gets chans; privmsgSeq [(ch, drop 11 msg) | ch <- joined]
             | "!chans" == msg = do list <- gets chans; privmsgSeq [("mathu", m) | m <- list]
             | "!join " `isPrefixOf` msg && "mathu" == user = joinChan $ takeWhile (/=' ') $ drop 6 msg
             | "!part " `isPrefixOf` msg && "mathu" == user = partChan $ takeWhile (/=' ') $ drop 6 msg
@@ -134,11 +135,6 @@ privmsgSeq ((ch, msg) : msgs) = do
     privmsgSeq msgs
 privmsgSeq [] = return ()
 
--- eventually add channel management interface
--- track joined chans in bot
--- take join chan from eval, write join chan and add chan to list
--- list is print array
--- part chan is pop chan from array, write part chan if exists
 -- broadcast msg is privmsgSeq [(ch, msg) | ch <- chans]
 
 
