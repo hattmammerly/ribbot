@@ -15,7 +15,8 @@ import Title -- Title.hs module in same directory
 
 
 -- Net monad, wrapper over IO, carrying the bot's immutable state
-data Bot = Nope | Bot { socket :: Handle } -- Nope is the most bullshit way to solve my problem
+data Bot = Nope | Bot { socket :: Handle, -- Nope is the most bullshit way to solve my problem
+                        chans :: [String] }
 type Net = StateT Bot IO
 
 server = "irc.freenode.org"
@@ -34,8 +35,7 @@ connect :: IO Bot
 connect = notify $ do
     h <- connectTo server (PortNumber port)
     hSetBuffering h NoBuffering
-    return (Bot h) -- initially no game will be in progress
-    -- nested return is probably really stupid
+    return (Bot h [])
   where
     notify a = Ex.bracket_
       (printf "Connecting to %s ... " server >> hFlush stdout)
@@ -46,7 +46,8 @@ run :: Net ()
 run = do
     write "NICK" nick
     write "USER" (nick ++ " 0 * :matt testing a bot")
-    write "JOIN" chan
+    joinChan chan
+--    write "JOIN" chan
     gets socket >>= listen
 
 listen :: Handle -> Net ()
@@ -79,6 +80,9 @@ eval :: [String] -> Net ()
 eval (x:xs) | "!id " `isPrefixOf` msg && "mathu" == user = privmsg chan $ drop 4 msg
             | "!imp " `isPrefixOf` msg && "mathu" == user = let (ch, m) = break (==' ') (drop 5 msg)
                                                                   in privmsg ch (drop 1 m)
+            | "!chans" == msg = do list <- gets chans; privmsgSeq [("mathu", m) | m <- list]
+            | "!join " `isPrefixOf` msg && "mathu" == user = joinChan $ takeWhile (/=' ') $ drop 6 msg
+            | "!part " `isPrefixOf` msg && "mathu" == user = partChan $ takeWhile (/=' ') $ drop 6 msg
             | "!quit" == msg && "mathu" == user =
                 write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
             where 
@@ -104,6 +108,21 @@ write s t = do
   h <- gets socket
   io $ hPrintf h "%s %s\r\n" s t
   io $ printf   ">%s %s\n"   s t
+
+joinChan :: String -> Net ()
+joinChan ch = do
+    list <- gets chans
+    h <- gets socket
+    write "JOIN" ch
+    put $ Bot h (ch : list)
+
+partChan :: String -> Net ()
+partChan ch = do
+    current <- gets chans
+    h <- gets socket
+    write "PART" ch
+    let newchans = filter (/=ch) current in
+        put $ Bot h newchans
 
 -- Convenience -- haskellwiki had this. I see no value.
 io :: IO a -> Net a
