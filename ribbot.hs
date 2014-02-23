@@ -11,14 +11,11 @@ import Control.Monad.Reader
 import Control.Exception as Ex
 import Text.Printf
 import Prelude hiding (catch)
-import Cards -- Cards.hs module in the same directory as this file
 import Title -- Title.hs module in same directory
-import Uno -- Uno.hs module in same directory
 
 
 -- Net monad, wrapper over IO, carrying the bot's immutable state
-data Bot = Nope | Bot { socket :: Handle -- Nope is the most bullshit way to solve my problem
-                      , game :: Game }
+data Bot = Nope | Bot { socket :: Handle } -- Nope is the most bullshit way to solve my problem
 type Net = StateT Bot IO
 
 server = "irc.freenode.org"
@@ -37,7 +34,7 @@ connect :: IO Bot
 connect = notify $ do
     h <- connectTo server (PortNumber port)
     hSetBuffering h NoBuffering
-    return (Bot h None) -- initially no game will be in progress
+    return (Bot h) -- initially no game will be in progress
     -- nested return is probably really stupid
   where
     notify a = Ex.bracket_
@@ -75,20 +72,15 @@ scan :: [String] -> Net () -- This function is messy!
 scan xs = do
     a <- io $ liftM rights $ sequence $ fmap getTitle (findURLs s) -- Extract [String] from [IO (Either ParserError String)] 
     mapM_ (\x -> privmsg chan ("Link Title: [ " ++ x ++ " ]")) a;
-    where s = drop 1 (last xs)
+    where s = last xs
 
 -- Evaluate active bot commands
 eval :: [String] -> Net ()
-eval (x:xs) | "!id" `isPrefixOf` msg && "hattmammerly" == user = privmsg chan $ drop 4 msg
-            | "!imp" `isPrefixOf` msg && "hattmammerly" == user = let (ch, m) = break (==' ') (drop 5 msg)
+eval (x:xs) | "!id " `isPrefixOf` msg && "mathu" == user = privmsg chan $ drop 4 msg
+            | "!imp " `isPrefixOf` msg && "mathu" == user = let (ch, m) = break (==' ') (drop 5 msg)
                                                                   in privmsg ch (drop 1 m)
-            | ("!quit" == msg) && ("hattmammerly" == user)
-                 = write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
-            | "!uno " `isPrefixOf` msg = do -- send game and line to uno
-                 g <- gets game
-                 updateGame $ uno (user : tail (init xs) ++ [(drop 5 msg)]) g
-            | "!show" == msg = do g <- gets game; showGame g
-            | "!put" == msg = do h <- gets socket; put $ Bot h (Game [] [] [(chan,"test")])
+            | "!quit" == msg && "mathu" == user =
+                write "QUIT" ":Exiting" >> io (exitWith ExitSuccess)
             where 
                 msg = last xs
                 user = takeWhile (/='!') x
@@ -122,28 +114,6 @@ privmsgSeq ((ch, msg) : msgs) = do
     privmsg ch msg
     privmsgSeq msgs
 privmsgSeq [] = return ()
-
--- Sends queued messages and returns the bot with the updated game state
--- Can probably be cleaned up a tad
-updateGame :: IO Game -> Net ()
-updateGame iogame = do
-    h <- gets socket
-    case game of None -> put $ Bot h game
-                 Organizing players decks msgs -> do
-                     privmsgSeq msgs
-                     put $ Bot h (Organizing players decks [])
-                 Game players decks msgs -> do
-                     privmsgSeq msgs
-                     put $ Bot h (Game players decks [])
-                 Suspended players decks msgs -> do
-                     privmsgSeq msgs
-                     put $ Bot h (Suspended players decks [])
-    where game = unsafePerformIO iogame
-
--- Write the game to #testmattbot for debugging I guess
-showGame :: Game -> Net ()
-showGame game = do
-    privmsg chan (show game)
 
 -- eventually add channel management interface
 -- track joined chans in bot
